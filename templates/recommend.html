@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Recommendation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to right, #6dd5ed, #2193b0);
+            margin: 0;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 90%;
+            width: 600px;
+        }
+        h2 {
+            margin: 0 0 20px;
+            color: #333;
+            font-size: 24px;
+        }
+        .input-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        input, select {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #28a745;
+            color: white;
+            font-size: 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #218838;
+        }
+        #doctorResult {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            max-width: 1200px;
+            width: 100%;
+        }
+        .doctor-card {
+            background: white;
+            width: 220px;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            text-align: left;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .doctor-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+        .doctor-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .doctor-icon {
+            font-size: 35px;
+            color: #007bff;
+        }
+        h3 {
+            font-size: 18px;
+            margin: 0;
+            color: #007bff;
+        }
+        .doctor-details p {
+            margin: 6px 0;
+            font-size: 14px;
+            color: #555;
+        }
+        .doctor-score {
+            font-weight: bold;
+            color: #28a745;
+            font-size: 15px;
+        }
+        @media (max-width: 600px) {
+            .input-group {
+                flex-direction: column;
+            }
+            input, select {
+                width: 100%;
+            }
+            .doctor-card {
+                width: 100%;
+            }
+        }
+    </style>
+    <script>
+        function recommendDoctor() {
+            let disease = document.getElementById("disease").value;
+            let location = document.getElementById("location").value;
+
+            fetch("/recommend", {
+                method: "POST",
+                body: new URLSearchParams({ "disease": disease, "location": location }),
+                headers: { "Content-Type": "application/x-www-form-urlencoded" }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById("doctorResult").innerHTML = `<p style="color:red;">${data.error}</p>`;
+                    return;
+                }
+
+                let resultHtml = `<h3 style="width: 100%; text-align: center; color: #fff; margin-bottom: 10px;">Specialization: ${data.specialization}</h3>`;
+                data.doctors.slice(0, 5).forEach(doc => {
+                    resultHtml += `
+                        <div class="doctor-card">
+                            <div class="doctor-header">
+                                <i class="fas fa-user-md doctor-icon"></i>
+                                <h3>${doc["Doctor Name"]}</h3>
+                            </div>
+                            <div class="doctor-details">
+                                <p><strong>Specialization:</strong> ${doc["Specialization"]}</p>
+                                <p><strong>Location:</strong> ${doc["Location"]}</p>
+                                <p><strong>Availability:</strong> ${doc["Availability"]}</p>
+                                <p><strong>Fee:</strong> $${doc["Consultation Fee ($)"]}</p>
+                                <p><strong>Insurance:</strong> ${doc["Insurance Accepted"]}</p>
+                                <p class="doctor-score"><i class="fas fa-star"></i> Score: ${doc["score"]}</p>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                document.getElementById("doctorResult").innerHTML = resultHtml;
+            })
+            .catch(error => {
+                document.getElementById("doctorResult").innerHTML = `<p style="color:red;">Error fetching data.</p>`;
+            });
+        }
+    </script>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Find a Doctor</h2>
+        <div class="input-group">
+            <input type="text" id="disease" placeholder="Enter disease" value="{{ request.args.get('disease', '') }}">
+            <select id="location">
+                <option value="">Select Location</option>
+                {% for loc in locations %}
+                    <option value="{{ loc }}">{{ loc }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button onclick="recommendDoctor()">Find Doctor</button>
+    </div>
+
+    <div id="doctorResult"></div>
+
+</body>
+</html>
